@@ -1,0 +1,16 @@
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
+
+  http://sourceforge.net/projects/pods
+
+====
+
+Name:         hokuyo
+Maintainers:  
+Summary:      Hokuyo URG/UTM drivers
+Description:  
+
+Requirements:
+  Requires the following pods, which are distributed as part of libbot2:
+
+  bot2-core  (svn co https://svn.csail.mit.edu/libbot2)

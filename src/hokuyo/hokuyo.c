@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
     setlinebuf(stdout);
 
     char *optstring = "hc:d:p:i:as:b:In";
-    char c;
+    int c;
     struct option long_opts[] = {
         {"help", no_argument, 0, 'h'},
         {"channel", required_argument, 0, 'c'},

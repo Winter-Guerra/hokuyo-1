@@ -109,7 +109,7 @@ _read_serialno(urg_t *urg, int *serialno)
     for(int i = 0; i < LinesMax; ++i) {
         if(!strncmp(version_lines[i], prefix, plen)) {
             char *eptr = NULL;
-            int sn = strtol(version_lines[i] + plen, &eptr, 10);
+            int sn = strtol(version_lines[i] + plen+1, &eptr, 10); //skip 1 since the first entry can sometimes be a letter (one of the hokuyos is H0803547)
             if(eptr != version_lines[i] + plen) {
                 *serialno = sn;
                 return 1;

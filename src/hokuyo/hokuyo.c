@@ -361,16 +361,24 @@ int main(int argc, char *argv[])
     }
 
     bot_core_planar_lidar_t msg;
-    int max_nranges = urg_param.area_max_ - urg_param.area_min_ + 1;
-    msg.ranges = (float*) malloc(sizeof(float) * max_nranges);
+    int min_nrange = urg_param.area_min_;
+    int max_nrange = urg_param.area_max_;
+    int num_nranges = max_nrange - min_nrange + 1;
+    msg.ranges = (float*) malloc(sizeof(float) * num_nranges);
     msg.nintensities = 0;
-    msg.intensities = (float*) malloc(sizeof(float) * max_nranges);
+    msg.intensities = (float*) malloc(sizeof(float) * num_nranges);
+
+    printf("size: %d\n", urg_param.area_total_);
+
     msg.radstep = 2.0 * M_PI / urg_param.area_total_ * skipbeams;
     msg.rad0 = urg_index2rad(&urg,urg_param.area_min_);
     printf("Area Max: %d  Area Min: %d\n", urg_param.area_max_, urg_param.area_min_);
     printf("Angular resolution: %f deg\n", TO_DEGREES(msg.radstep));
     printf("Starting angle:     %f deg\n", TO_DEGREES(msg.rad0));
     printf("Scan RPM:           %d\n", urg_param.scan_rpm_);
+    //printf("min_nrange:        %d\n", min_nrange);
+    //printf("max_nrange:        %d\n", max_nrange);
+    //printf("num_nranges:        %d\n", num_nranges);
     printf("\n");
 
     int64_t now = bot_timestamp_now();
@@ -392,13 +400,13 @@ int main(int argc, char *argv[])
         else
             nranges = urg_receiveDataWithIntensity(&urg, data, data_max,intensity);
 
-        if(nranges > max_nranges) {
+        if(nranges-min_nrange > num_nranges) {
              printf("WARNING:  received more range measurements than the maximum advertised!\n");
-             printf("          Hokuyo reported max %d, but received %d\n", max_nranges, nranges);
-             max_nranges = nranges;
-             msg.ranges = (float*) realloc(msg.ranges, sizeof(float) * max_nranges);
+             printf("          Hokuyo reported max %d, but received %d\n", num_nranges, nranges);
+             num_nranges = nranges;
+             msg.ranges = (float*) realloc(msg.ranges, sizeof(float) * num_nranges);
              if (readIntensities)
-               msg.intensities = (float*) realloc(msg.intensities, sizeof(float) * max_nranges);
+               msg.intensities = (float*) realloc(msg.intensities, sizeof(float) * num_nranges);
         }
         now = bot_timestamp_now();
         int64_t hokuyo_mtime = urg_recentTimestamp(&urg);
@@ -449,20 +457,21 @@ int main(int argc, char *argv[])
         else
           msg.utime = bot_timestamp_sync(sync, hokuyo_mtime, now);
 
-        msg.nranges = nranges/skipbeams;
+        msg.nranges = num_nranges/skipbeams;
         if (readIntensities){
-          msg.nintensities = nranges/skipbeams;
+          msg.nintensities = num_nranges/skipbeams;
           int c=0;
-          for(int i=0; i<nranges; i+=skipbeams) {
-            msg.ranges[c] = data[i] * 1e-3;
+          for(int i=0; i<num_nranges; i+=skipbeams) {
+            msg.ranges[c] = data[min_nrange + i] * 1e-3;
             msg.intensities[c] = intensity[i]; //TODO: this should probably be scaled???
             c++;
           }
         }
         else{
           int c=0;
-          for(int i=0; i<nranges; i+=skipbeams)
-            msg.ranges[c++] = data[i] * 1e-3;
+          for(int i=0; i<num_nranges; i+=skipbeams) {
+            msg.ranges[c++] = data[min_nrange + i] * 1e-3;
+          }
         }
         bot_core_planar_lidar_t_publish(lcm, channel, &msg);
 

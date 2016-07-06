@@ -20,7 +20,7 @@
 
 #define TO_DEGREES(rad) ((rad)*180/M_PI)
 
-#include "liburg/urg_ctrl.h"
+#include "liburg/include/urg_connection.h"
 
 static void
 usage(const char *progname)
@@ -60,7 +60,7 @@ _get_acm_devnames(void)
 }
 
 static int
-_connect_by_device(urg_t *urg, urg_parameter_t *params, const char *device)
+_connect_by_device(urg_connection_t *urg, urg_connection_type_t *params, const char *device)
 {
     if(urg_connect(urg, device, 115200) < 0) {
         return 0;
@@ -70,7 +70,7 @@ _connect_by_device(urg_t *urg, urg_parameter_t *params, const char *device)
 }
 
 static int
-_connect_any_device(urg_t *urg, urg_parameter_t *params)
+_connect_any_device(urg_connection_t *urg, urg_connection_type_t *params)
 {
     char **devnames = _get_acm_devnames();
     if(!devnames[0]) {
@@ -88,7 +88,7 @@ _connect_any_device(urg_t *urg, urg_parameter_t *params)
 }
 
 static gboolean
-_read_serialno(urg_t *urg, int *serialno)
+_read_serialno(urg_connection_t *urg, int *serialno)
 {
     // read the serial number of the hokuyo.  This is buried within
     // a bunch of other crap.
@@ -120,7 +120,7 @@ _read_serialno(urg_t *urg, int *serialno)
 }
 
 static gboolean
-_connect_by_id(urg_t *urg, urg_parameter_t *params, const int desired_serialno)
+_connect_by_id(urg_connection_t *urg, urg_connection_type_t *params, const int desired_serialno)
 {
     char **devnames = _get_acm_devnames();
     for(int i=0; devnames[i]; i++) {
@@ -154,7 +154,7 @@ _connect_by_id(urg_t *urg, urg_parameter_t *params, const int desired_serialno)
 }
 
 static gboolean
-_connect(urg_t *urg, urg_parameter_t *params, int serialno,
+_connect(urg_connection_t *urg, urg_connection_type_t *params, int serialno,
         const char *device, int *data_max, bot_timestamp_sync_state_t **sync, int skipscans, int skipbeams, int readIntensities)
 {
     if(serialno) {
@@ -239,13 +239,15 @@ int main(int argc, char *argv[])
 {
     setlinebuf(stdout);
 
-    char *optstring = "hc:d:p:i:as:b:In";
+    char *optstring = "hc:d:pP:i:as:b:In";
     int c;
     struct option long_opts[] = {
         {"help", no_argument, 0, 'h'},
         {"channel", required_argument, 0, 'c'},
         {"device", required_argument, 0, 'd'},
         {"id", required_argument, 0, 'i'},
+        {"ip", required_argument, 0, 'p'},
+        {"port", required_argument, 0, 'P'},
         {"lcmurl", required_argument, 0, 'l'},
         {"skipscans",required_argument,0,'s'},
         {"skipbeams",required_argument,0,'b'},
@@ -258,6 +260,8 @@ int main(int argc, char *argv[])
     char *device = NULL;
     char *channel = g_strdup("HOKUYO_LIDAR");
     char *lcm_url = NULL;
+    char *ip = NULL;
+    int port = 10940;
     int serialno = 0;
     int skipscans =1;
     int skipbeams =1;
@@ -277,6 +281,20 @@ int main(int argc, char *argv[])
                 device = g_strdup(optarg);
                 break;
             case 'p':
+                    free(ip);
+                    ip = g_strdup(optarg);
+                    break;
+            case 'P':
+                {
+                    char *eptr = NULL;
+                    port = strtol(optarg, &eptr, 5);
+                    if(*eptr != '\0') {
+                        usage(argv[0]);
+                        return 1;
+                    }
+                }
+                break;
+            case 'l':
                 free(lcm_url);
                 lcm_url = g_strdup(optarg);
                 break;
@@ -324,7 +342,7 @@ int main(int argc, char *argv[])
     int data_max;
     long* data = NULL;
     long* intensity = NULL;
-    urg_parameter_t urg_param;
+    urg_connection_type_t urg_param;
 
     // setup LCM
     lcm_t *lcm = lcm_create(lcm_url);
@@ -335,7 +353,7 @@ int main(int argc, char *argv[])
 
     bot_timestamp_sync_state_t *sync = NULL;
 
-    urg_t urg;
+    urg_connection_t urg;
     int max_initial_tries = 10;
     int connected = 0;
     for(int i=0; i<max_initial_tries && !connected; i++) {

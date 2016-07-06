@@ -31,6 +31,8 @@ usage(const char *progname)
             "  -c, --channel CHAN     LCM channel name\n"
             "  -d, --device DEV       Device file to connect to\n"
             "  -i, --id ID            Search for Hokuyo with serial id ID\n"
+            "  -p, --ip IP            The IP of the Hokuyo device to connect to\n"
+            "  -P, --port PORT        The port # of the ethernet Hokuyo device\n"
             "  -l, --lcmurl URL       LCM URL\n"
             "  -s, --skipscans NUM    Publish every NUMth scan [defaults to 1]\n"
             "                           (reduce scan frequency)\n"

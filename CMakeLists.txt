@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6.0)
 
-project(hokuyo)
+set(POD_NAME hokuyo_lcm)
+
+project(hokuyo_lcm)
 
 include(cmake/pods.cmake)
 

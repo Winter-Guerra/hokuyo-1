@@ -21,6 +21,7 @@
 #define TO_DEGREES(rad) ((rad)*180/M_PI)
 
 #include "liburg/include/urg_connection.h"
+#include "liburg/include/urg_sensor.h"
 
 static void
 usage(const char *progname)
@@ -64,10 +65,10 @@ _get_acm_devnames(void)
 static int
 _connect_by_device(urg_connection_t *urg, urg_connection_type_t *params, const char *device)
 {
-    if(urg_connect(urg, device, 115200) < 0) {
+    if(connection_open(urg, URG_SERIAL, device, 115200) < 0) {
         return 0;
     }
-    urg_parameters(urg, params);
+    // urg_parameters(urg, params);
     return 1;
 }
 
@@ -89,69 +90,71 @@ _connect_any_device(urg_connection_t *urg, urg_connection_type_t *params)
     return 0;
 }
 
+// @TODO
 static gboolean
 _read_serialno(urg_connection_t *urg, int *serialno)
 {
     // read the serial number of the hokuyo.  This is buried within
     // a bunch of other crap.
-    int LinesMax = 5;
-    char version_buffer[LinesMax][UrgLineWidth];
-    char *version_lines[LinesMax];
-    for (int i = 0; i < LinesMax; ++i) {
-        version_lines[i] = version_buffer[i];
-    }
-    int status = urg_versionLines(urg, version_lines, LinesMax);
-    if (status < 0) {
-        fprintf(stderr, "urg_versionLines: %s\n", urg_error(urg));
-        return 0;
-    }
-    const char *prefix = "SERI:";
-    int plen = strlen(prefix);
-
-    for(int i = 0; i < LinesMax; ++i) {
-        if(!strncmp(version_lines[i], prefix, plen)) {
-            char *eptr = NULL;
-            int sn = strtol(version_lines[i] + plen+1, &eptr, 10); //skip 1 since the first entry can sometimes be a letter (one of the hokuyos is H0803547)
-            if(eptr != version_lines[i] + plen) {
-                *serialno = sn;
-                return 1;
-            }
-        }
-    }
+    // int LinesMax = 5;
+    // char version_buffer[LinesMax][UrgLineWidth];
+    // char *version_lines[LinesMax];
+    // for (int i = 0; i < LinesMax; ++i) {
+    //     version_lines[i] = version_buffer[i];
+    // }
+    // int status = urg_versionLines(urg, version_lines, LinesMax);
+    // if (status < 0) {
+    //     fprintf(stderr, "urg_versionLines: %s\n", urg_error(urg));
+    //     return 0;
+    // }
+    // const char *prefix = "SERI:";
+    // int plen = strlen(prefix);
+    //
+    // for(int i = 0; i < LinesMax; ++i) {
+    //     if(!strncmp(version_lines[i], prefix, plen)) {
+    //         char *eptr = NULL;
+    //         int sn = strtol(version_lines[i] + plen+1, &eptr, 10); //skip 1 since the first entry can sometimes be a letter (one of the hokuyos is H0803547)
+    //         if(eptr != version_lines[i] + plen) {
+    //             *serialno = sn;
+    //             return 1;
+    //         }
+    //     }
+    // }
     return 0;
 }
 
+//@TODO
 static gboolean
 _connect_by_id(urg_connection_t *urg, urg_connection_type_t *params, const int desired_serialno)
 {
-    char **devnames = _get_acm_devnames();
-    for(int i=0; devnames[i]; i++) {
-        printf("Trying %s...\n", devnames[i]);
-        const char *devname = devnames[i];
-
-        if(!_connect_by_device(urg, params, devname)) {
-            continue;
-        }
-
-        int serialno = -1;
-        if(!_read_serialno(urg, &serialno)) {
-            printf("Couldn't read serial number on %s\n", devname);
-            urg_laserOff(urg);
-            urg_disconnect(urg);
-            continue;
-        }
-
-        if(desired_serialno == serialno) {
-            printf("Found %d on %s\n", serialno, devname);
-            g_strfreev(devnames);
-            return 1;
-        } else {
-            printf("Skipping %s (found serial #: %d, desired: %d)\n", devname, serialno, desired_serialno);
-            urg_laserOff(urg);
-            urg_disconnect(urg);
-        }
-    }
-    g_strfreev(devnames);
+    // char **devnames = _get_acm_devnames();
+    // for(int i=0; devnames[i]; i++) {
+    //     printf("Trying %s...\n", devnames[i]);
+    //     const char *devname = devnames[i];
+    //
+    //     if(!_connect_by_device(urg, params, devname)) {
+    //         continue;
+    //     }
+    //
+    //     int serialno = -1;
+    //     if(!_read_serialno(urg, &serialno)) {
+    //         printf("Couldn't read serial number on %s\n", devname);
+    //         urg_laserOff(urg);
+    //         urg_disconnect(urg);
+    //         continue;
+    //     }
+    //
+    //     if(desired_serialno == serialno) {
+    //         printf("Found %d on %s\n", serialno, devname);
+    //         g_strfreev(devnames);
+    //         return 1;
+    //     } else {
+    //         printf("Skipping %s (found serial #: %d, desired: %d)\n", devname, serialno, desired_serialno);
+    //         urg_laserOff(urg);
+    //         urg_disconnect(urg);
+    //     }
+    // }
+    // g_strfreev(devnames);
     return 0;
 }
 
@@ -176,39 +179,41 @@ _connect(urg_connection_t *urg, urg_connection_type_t *params, int serialno,
         *data_max = urg_dataMax(urg);
 
     // read and print out version information
-    int LinesMax = 5;
-    char version_buffer[LinesMax][UrgLineWidth];
-    char *version_lines[LinesMax];
-    for (int i = 0; i < LinesMax; ++i) {
-        version_lines[i] = version_buffer[i];
-    }
-    int status = urg_versionLines(urg, version_lines, LinesMax);
-    if (status < 0) {
-        fprintf(stderr, "urg_versionLines: %s\n", urg_error(urg));
-        urg_disconnect(urg);
-        return 0;
-    }
-    for(int i = 0; i < LinesMax; ++i) {
-        printf("%s\n", version_lines[i]);
-    }
-    printf("\n");
+    // @TODO
+    // int LinesMax = 5;
+    // char version_buffer[LinesMax][UrgLineWidth];
+    // char *version_lines[LinesMax];
+    // for (int i = 0; i < LinesMax; ++i) {
+    //     version_lines[i] = version_buffer[i];
+    // }
+    // int status = urg_versionLines(urg, version_lines, LinesMax);
+    // if (status < 0) {
+    //     fprintf(stderr, "urg_versionLines: %s\n", urg_error(urg));
+    //     urg_disconnect(urg);
+    //     return 0;
+    // }
+    // for(int i = 0; i < LinesMax; ++i) {
+    //     printf("%s\n", version_lines[i]);
+    // }
+    // printf("\n");
 
     if(*sync)
         bot_timestamp_sync_free(*sync);
     *sync = bot_timestamp_sync_init(1000, 4294967296L, 1.001);
     // guessed at wrap-around based on 4 byte field.
 
-    // estimate clock skew
-    urg_enableTimestampMode(urg);
-    for (int i = 0; i < 10; i++) {
-        int64_t hokuyo_mtime = urg_currentTimestamp(urg);
-        int64_t now = bot_timestamp_now();
-        bot_timestamp_sync(*sync, hokuyo_mtime, now);
-    }
-    urg_disableTimestampMode(urg);
-
-    // configure Hokuyo to continuous capture mode.
-    urg_setCaptureTimes(urg, UrgInfinityTimes);
+    // estimate clock skew @TODO
+    // urg_enableTimestampMode(urg);
+    // for (int i = 0; i < 10; i++) {
+    //     int64_t hokuyo_mtime = urg_currentTimestamp(urg);
+    //     int64_t now = bot_timestamp_now();
+    //     bot_timestamp_sync(*sync, hokuyo_mtime, now);
+    // }
+    // urg_disableTimestampMode(urg);
+    //
+    // // configure Hokuyo to continuous capture mode.
+    // @TODO
+    // urg_setCaptureTimes(urg, UrgInfinityTimes);
 
     // set the scan skip
     //For whatever reason, the hokuyo API is inconsistent between the skip scans and skip beams
@@ -223,10 +228,17 @@ _connect(urg_connection_t *urg, urg_connection_type_t *params, int serialno,
     urg_setSkipLines(urg,skipbeams);
 
     // start data transmission
-    if (readIntensities)
-      status = urg_requestData(urg, URG_MD_INTENSITY, URG_FIRST, URG_LAST);
-    else
-      status = urg_requestData(urg, URG_MD, URG_FIRST, URG_LAST);
+    // Allow for asking for LIDAR intensity
+    // @TODO
+    // if (readIntensities)
+    //   status = urg_requestData(urg, URG_MD_INTENSITY, URG_FIRST, URG_LAST);
+    // else
+
+    urg_set_scanning_parameter(&urg, urg_deg2step(&urg, -45), urg_deg2step(&urg, +45), 1);
+    urg_start_measurement(&urg, URG_DISTANCE, 1, 0);
+    int data_size = urg_max_data_size(&urg);
+    long *data = malloc(data_size * sizeof(long));
+    int status = urg_get_distance(&urg, data, NULL);
 
     if (status < 0) {
         fprintf(stderr, "urg_requestData(): %s\n", urg_error(urg));

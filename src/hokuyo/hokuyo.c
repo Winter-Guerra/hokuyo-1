@@ -15,7 +15,9 @@
 #include <glib.h>
 #include <lcm/lcm.h>
 
-#define MAX_ACM_DEVS 20
+
+#define SKIP_SCANS 9 // Number of scans to skip [0,9]
+#define PUBLISHING_CHANNEL "scan"
 
 #include <bot_core/bot_core.h>
 
@@ -25,45 +27,7 @@
 #include "liburg/include/urg_sensor.h"
 #include "liburg/samples/open_urg_sensor.h"
 
-// Useful for printing the scan data.
-static void print_data(urg_t *urg, long data[], int data_n, long time_stamp)
-{
-#if 1
-    int front_index;
-
-    (void)data_n;
-
-    // \~japanese �O���̃f�[�^�݂̂��\��
-    front_index = urg_step2index(urg, 0);
-    printf("Distance from front of LIDAR is %ld [mm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
-
-#else
-    (void)time_stamp;
-
-    int i;
-    long min_distance;
-    long max_distance;
-
-    // \~japanese �S�Ẵf�[�^�� X-Y �̈ʒu���\��
-    urg_distance_min_max(urg, &min_distance, &max_distance);
-    for (i = 0; i < data_n; ++i) {
-        long l = data[i];
-        double radian;
-        long x;
-        long y;
-
-        if ((l <= min_distance) || (l >= max_distance)) {
-            continue;
-        }
-        radian = urg_index2rad(urg, i);
-        x = (long)(l * cos(radian));
-        y = (long)(l * sin(radian));
-        printf("(%ld, %ld), ", x, y);
-    }
-    printf("\n");
-#endif
-}
-
+// Where the magic happens
 int main(int argc, char *argv[])
 {
     setlinebuf(stdout);
@@ -81,7 +45,6 @@ int main(int argc, char *argv[])
     int max_step;
     long min_distance;
     long max_distance;
-    int skip_scan = 9; // This is the max that it can be.
 
     // Open the laser scanner
     if (open_urg_sensor(&urg, argc, argv) < 0) {
@@ -104,42 +67,75 @@ int main(int argc, char *argv[])
     printf("scan interval: %ld [usec]\n", urg_scan_usec(&urg));
     printf("sensor data size: %d\n", urg_max_data_size(&urg));
 
+    // @TODO: set timestamp of lidar to that of computer epoch.
+
     // Begin polling the laserscanner for data.
-    bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE, URG_SCAN_INFINITY, skip_scan);
+    bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE, URG_SCAN_INFINITY, SKIP_SCANS);
     long *data = (long*)malloc(urg_max_data_size(&urg) * sizeof(data[0]));
     long timestamp;
-    // Retrieve Distance data for all eternity
 
+    // Precreate the message structure
+    bot_core_planar_lidar_t msg;
+    // the angle (in radians) to the first point in nranges,
+    // relative to the laser scanner's own coordinate frame.
+    msg.rad0 = urg_index2rad(&urg, 0);
+    printf("Starting radian: %f\n", msg.rad0);
+    // the number of radians between each successive sample
+    msg.radstep = (urg_index2rad(&urg, 1) - urg_index2rad(&urg, 0));
+    printf("radstep: %f\n", msg.radstep);
+    // range data (meters)
+    msg.nranges = urg_max_data_size(&urg);
+    msg.ranges = (float*) malloc(sizeof(float) * msg.nranges);
+    // Intensity data
+    msg.nintensities = 0;
+    msg.intensities = (float*) malloc(sizeof(float) * msg.nintensities);
+
+    // Retrieve Distance data for all eternity
     while (!catastrophicError){
+      // Get the sensor reading
       int n = urg_get_distance(&urg, data, &timestamp);
       catastrophicError = (n<0);
+
       // Debug
-      print_data(&urg, data, n, timestamp);
+      // print_data(&urg, data, n, timestamp);
+
+      // Output to LCM.
+
+      // 	int64_t  utime;
+      msg.utime = timestamp;
+
+      // Copy and convert scan data from mm to m
+      int i;
+      for (i=0; i<n; i+=1) {
+        msg.ranges[i] = (data[i] * 10e-3);
+        // msg.ranges[i] = (data[i]);
+      }
+
+      // Publish the message
+      bot_core_planar_lidar_t_publish(lcm, PUBLISHING_CHANNEL, &msg);
+      // printf("published a message!\n");
+
     }
 
-
+    // When killed:
     urg_close(&urg);
 
 #if defined(URG_MSC)
     getchar();
 #endif
     return 0;
-
-
-  // When killed:
     lcm_destroy(lcm);
-    //
-    // urg_laserOff(&urg);
-    // urg_disconnect(&urg);
 
+}
 
-    // if(sync)
-    //     bot_timestamp_sync_free(sync);
-    // free(data);
-    // free(intensity);
-    // free(lcm_url);
-    // free(channel);
-    // free(device);
+// Useful for printing the scan data.
+static void print_data(urg_t *urg, long data[], int data_n, long time_stamp)
+{
+    int front_index;
 
-    // return exit_code;
+    (void)data_n;
+
+    // \~japanese �O���̃f�[�^�݂̂��\��
+    front_index = urg_step2index(urg, 0);
+    printf("Distance from front of LIDAR is %ld [mm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
 }

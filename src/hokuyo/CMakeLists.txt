@@ -1,4 +1,5 @@
 add_definitions(-std=gnu99)
+add_definitions(-g)
 
 include_directories(${PROJECT_SOURCE_DIR}/src/hokuyo/liburg/include
     ${PROJECT_SOURCE_DIR}/src/hokuyo/liburg/samples

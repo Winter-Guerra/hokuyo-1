@@ -57,21 +57,19 @@ int main(int argc, char *argv[])
     printf("Sensor serial ID: %s\n", urg_sensor_serial_id(&urg));
     printf("Sensor status: %s\n", urg_sensor_status(&urg));
     printf("Sensor state: %s\n", urg_sensor_state(&urg));
-
     urg_step_min_max(&urg, &min_step, &max_step);
     printf("step: [%d, %d]\n", min_step, max_step);
-
     urg_distance_min_max(&urg, &min_distance, &max_distance);
     printf("distance: [%ld, %ld)\n", min_distance, max_distance);
-
     printf("scan interval: %ld [usec]\n", urg_scan_usec(&urg));
     printf("sensor data size: %d\n", urg_max_data_size(&urg));
 
     // @TODO: set timestamp of lidar to that of computer epoch.
 
-    // Begin polling the laserscanner for data.
-    bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE, URG_SCAN_INFINITY, SKIP_SCANS);
+    // Begin polling the laserscanner for intensity data.
+    bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE_INTENSITY, URG_SCAN_INFINITY, SKIP_SCANS);
     long *data = (long*)malloc(urg_max_data_size(&urg) * sizeof(data[0]));
+    long *intensities = (long*)malloc(urg_max_data_size(&urg) * sizeof(intensities[0]));
     long timestamp;
 
     // Precreate the message structure
@@ -87,13 +85,13 @@ int main(int argc, char *argv[])
     msg.nranges = urg_max_data_size(&urg);
     msg.ranges = (float*) malloc(sizeof(float) * msg.nranges);
     // Intensity data
-    msg.nintensities = 0;
+    msg.nintensities = urg_max_data_size(&urg);
     msg.intensities = (float*) malloc(sizeof(float) * msg.nintensities);
 
     // Retrieve Distance data for all eternity
     while (!catastrophicError){
       // Get the sensor reading
-      int n = urg_get_distance(&urg, data, &timestamp);
+      int n = urg_get_distance_intensity(&urg, data, intensities, &timestamp);
       catastrophicError = (n<0);
 
       // Debug
@@ -108,7 +106,8 @@ int main(int argc, char *argv[])
       int i;
       for (i=0; i<n; i+=1) {
         msg.ranges[i] = (data[i] * 10e-3);
-        // msg.ranges[i] = (data[i]);
+        // Copy intensity data (unitless)
+        msg.intensities[i] = (intensities[i]);
       }
 
       // Publish the message

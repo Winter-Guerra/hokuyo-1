@@ -27,6 +27,12 @@
 #include "liburg/include/urg_sensor.h"
 #include "liburg/samples/open_urg_sensor.h"
 
+long int getPCms(void){
+  struct timeval tp;
+  gettimeofday(&tp, NULL);
+  long int ms = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
+}
+
 // Where the magic happens
 int main(int argc, char *argv[])
 {
@@ -45,11 +51,16 @@ int main(int argc, char *argv[])
     int max_step;
     long min_distance;
     long max_distance;
+    long time_stamp_offset;
 
     // Open the laser scanner
     if (open_urg_sensor(&urg, argc, argv) < 0) {
         return 1;
     }
+
+    // sync the clocks
+    urg_start_time_stamp_mode(&urg);
+    time_stamp_offset = (getPCms() - urg_time_stamp(&urg)); //@TODO
 
     // Print some information about the laser scanner
     printf("Sensor product type: %s\n", urg_sensor_product_type(&urg));
@@ -63,13 +74,15 @@ int main(int argc, char *argv[])
     printf("distance: [%ld, %ld)\n", min_distance, max_distance);
     printf("scan interval: %ld [usec]\n", urg_scan_usec(&urg));
     printf("sensor data size: %d\n", urg_max_data_size(&urg));
+    printf("timestamp offset: %ld\n", time_stamp_offset);
+
 
     // @TODO: set timestamp of lidar to that of computer epoch.
 
     // Begin polling the laserscanner for intensity data.
     bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE_INTENSITY, URG_SCAN_INFINITY, SKIP_SCANS);
     long *data = (long*)malloc(urg_max_data_size(&urg) * sizeof(data[0]));
-    long *intensities = (long*)malloc(urg_max_data_size(&urg) * sizeof(intensities[0]));
+    unsigned short *intensities = malloc(urg_max_data_size(&urg) * sizeof(intensities[0]));
     long timestamp;
 
     // Precreate the message structure
@@ -83,10 +96,10 @@ int main(int argc, char *argv[])
     printf("radstep: %f\n", msg.radstep);
     // range data (meters)
     msg.nranges = urg_max_data_size(&urg);
-    msg.ranges = (float*) malloc(sizeof(float) * msg.nranges);
+    msg.ranges = (float*) malloc(sizeof(data[0]) * msg.nranges);
     // Intensity data
     msg.nintensities = urg_max_data_size(&urg);
-    msg.intensities = (float*) malloc(sizeof(float) * msg.nintensities);
+    msg.intensities = malloc(sizeof(intensities[0]) * msg.nintensities);
 
     // Retrieve Distance data for all eternity
     while (!catastrophicError){
@@ -100,7 +113,7 @@ int main(int argc, char *argv[])
       // Output to LCM.
 
       // 	int64_t  utime;
-      msg.utime = timestamp;
+      msg.utime = timestamp+time_stamp_offset;
 
       // Copy and convert scan data from mm to m
       int i;
@@ -117,6 +130,7 @@ int main(int argc, char *argv[])
     }
 
     // When killed:
+    urg_stop_time_stamp_mode(&urg);
     urg_close(&urg);
 
 #if defined(URG_MSC)

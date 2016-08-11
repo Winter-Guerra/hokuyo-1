@@ -42,7 +42,7 @@ static void print_data(urg_t *urg, long data[], int data_n, long time_stamp)
 
     // \~japanese �O���̃f�[�^�݂̂��\��
     front_index = urg_step2index(urg, 0);
-    printf("Distance from front of LIDAR is %ld [mm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
+    printf("Distance from front of LIDAR is %ld [cm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
 }
 
 // Where the magic happens
@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
       // Copy and convert scan data from mm to m
       int i;
       for (i=0; i<n; i+=1) {
-        // convert mm into meters
-        msg.ranges[i] = (data[i] * 10e-3);
+        // convert cm into meters
+        msg.ranges[i] = (data[i] * 10e-4);
         // Convert intensity data to more or less match that of a SICK lidar
         msg.intensities[i] = (intensities[i])*15.0;
       }

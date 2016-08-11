@@ -16,7 +16,7 @@
 #include <lcm/lcm.h>
 
 
-#define SKIP_SCANS 9 // Number of scans to skip [0,9]
+#define SKIP_SCANS 0 // Number of scans to skip [0,9]
 #define PUBLISHING_CHANNEL "scan"
 
 #include <bot_core/bot_core.h>
@@ -78,10 +78,10 @@ int main(int argc, char *argv[])
     bot_core_planar_lidar_t msg;
     // the angle (in radians) to the first point in nranges,
     // relative to the laser scanner's own coordinate frame.
-    msg.rad0 = urg_index2rad(&urg, 0);
+    msg.rad0 = urg_step2rad(&urg, min_step);
     printf("Starting radian: %f\n", msg.rad0);
     // the number of radians between each successive sample
-    msg.radstep = (urg_index2rad(&urg, 1) - urg_index2rad(&urg, 0));
+    msg.radstep = (urg_step2rad(&urg, 1) - urg_step2rad(&urg, 0));
     printf("radstep: %f\n", msg.radstep);
     // range data (meters)
     msg.nranges = urg_max_data_size(&urg);

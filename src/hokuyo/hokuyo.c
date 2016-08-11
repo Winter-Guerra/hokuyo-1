@@ -72,7 +72,8 @@ int main(int argc, char *argv[])
 
     // sync the clocks
     urg_start_time_stamp_mode(&urg);
-    time_stamp_offset = (getPCms() - urg_time_stamp(&urg)); //@TODO
+    time_stamp_offset = (getPCms() - urg_time_stamp(&urg));
+    urg_stop_time_stamp_mode(&urg);
 
     // Print some information about the laser scanner
     printf("Sensor product type: %s\n", urg_sensor_product_type(&urg));
@@ -93,6 +94,14 @@ int main(int argc, char *argv[])
 
     // Begin polling the laserscanner for intensity data.
     bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE_INTENSITY, URG_SCAN_INFINITY, SKIP_SCANS);
+
+    // error handling
+    if (catastrophicError){
+      printf("Catastrophic error from URG %s\n", urg_error(&urg));
+      printf("Error #%d\n",urg.last_errno);
+      return urg.last_errno;
+    }
+
     long *data = (long*)malloc(urg_max_data_size(&urg) * sizeof(data[0]));
     unsigned short *intensities = malloc(urg_max_data_size(&urg) * sizeof(intensities[0]));
     long timestamp;
@@ -114,15 +123,17 @@ int main(int argc, char *argv[])
     msg.intensities = malloc(sizeof(msg.intensities[0]) * msg.nintensities);
 
     // Retrieve Distance data for all eternity
-    while (!catastrophicError){
+    while (true){
       // Get the sensor reading
       int n = urg_get_distance_intensity(&urg, data, intensities, &timestamp);
-      catastrophicError = (n<0);
 
-      // Debug
-      if (n<0){
-        printf("Error from URG %s", urg_error(&urg));
-        print_data(&urg, data, n, timestamp);
+      // Check for errors in reading, but ignore checksum errors since they go away fast.
+      bool error = (n<0);
+
+      // error printing
+      if (error){
+        printf("Error from URG %s\n", urg_error(&urg));
+        printf("Error #%d\n",urg.last_errno);
       }
 
 
@@ -134,9 +145,10 @@ int main(int argc, char *argv[])
       // Copy and convert scan data from mm to m
       int i;
       for (i=0; i<n; i+=1) {
+        // convert mm into meters
         msg.ranges[i] = (data[i] * 10e-3);
-        // Copy intensity data (unitless)
-        msg.intensities[i] = (intensities[i]);
+        // Convert intensity data to more or less match that of a SICK lidar
+        msg.intensities[i] = (intensities[i])*15.0;
       }
 
       // Publish the message
@@ -148,7 +160,6 @@ int main(int argc, char *argv[])
 
 
     // When killed:
-    urg_stop_time_stamp_mode(&urg);
     urg_close(&urg);
 
 #if defined(URG_MSC)

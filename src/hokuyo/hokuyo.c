@@ -33,6 +33,18 @@ long int getPCms(void){
   long int ms = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 }
 
+// Useful for printing the scan data.
+static void print_data(urg_t *urg, long data[], int data_n, long time_stamp)
+{
+    int front_index;
+
+    (void)data_n;
+
+    // \~japanese �O���̃f�[�^�݂̂��\��
+    front_index = urg_step2index(urg, 0);
+    printf("Distance from front of LIDAR is %ld [mm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
+}
+
 // Where the magic happens
 int main(int argc, char *argv[])
 {
@@ -99,7 +111,7 @@ int main(int argc, char *argv[])
     msg.ranges = (float*) malloc(sizeof(data[0]) * msg.nranges);
     // Intensity data
     msg.nintensities = urg_max_data_size(&urg);
-    msg.intensities = malloc(sizeof(intensities[0]) * msg.nintensities);
+    msg.intensities = malloc(sizeof(msg.intensities[0]) * msg.nintensities);
 
     // Retrieve Distance data for all eternity
     while (!catastrophicError){
@@ -108,7 +120,11 @@ int main(int argc, char *argv[])
       catastrophicError = (n<0);
 
       // Debug
-      // print_data(&urg, data, n, timestamp);
+      if (n<0){
+        printf("Error from URG %s", urg_error(&urg));
+        print_data(&urg, data, n, timestamp);
+      }
+
 
       // Output to LCM.
 
@@ -129,6 +145,8 @@ int main(int argc, char *argv[])
 
     }
 
+
+
     // When killed:
     urg_stop_time_stamp_mode(&urg);
     urg_close(&urg);
@@ -136,19 +154,7 @@ int main(int argc, char *argv[])
 #if defined(URG_MSC)
     getchar();
 #endif
-    return 0;
+    return catastrophicError;
     lcm_destroy(lcm);
 
-}
-
-// Useful for printing the scan data.
-static void print_data(urg_t *urg, long data[], int data_n, long time_stamp)
-{
-    int front_index;
-
-    (void)data_n;
-
-    // \~japanese �O���̃f�[�^�݂̂��\��
-    front_index = urg_step2index(urg, 0);
-    printf("Distance from front of LIDAR is %ld [mm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
 }

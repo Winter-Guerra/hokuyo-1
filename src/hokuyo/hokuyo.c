@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
       // Output to LCM.
 
       // 	int64_t  utime;
-      msg.utime = timestamp+time_stamp_offset;
+      msg.timestampJetson = timestamp+time_stamp_offset;
 
       // Copy and convert scan data from mm to m
       int i;

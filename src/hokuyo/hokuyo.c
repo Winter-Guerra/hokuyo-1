@@ -123,17 +123,18 @@ int main(int argc, char *argv[])
     msg.intensities = malloc(sizeof(msg.intensities[0]) * msg.nintensities);
 
     // Retrieve Distance data for all eternity
-    while (true){
+    while (!catastrophicError){
       // Get the sensor reading
       int n = urg_get_distance_intensity(&urg, data, intensities, &timestamp);
 
-      // Check for errors in reading, but ignore checksum errors since they go away fast.
-      bool error = (n<0);
+      // Check for errors in reading. Kill driver if something bad happens. Allow for procman to handle the restart.
+      catastrophicError = (n<0);
 
       // error printing
-      if (error){
+      if (catastrophicError){
         printf("Error from URG %s\n", urg_error(&urg));
         printf("Error #%d\n",urg.last_errno);
+        break;
       }
 
 
@@ -165,7 +166,8 @@ int main(int argc, char *argv[])
 #if defined(URG_MSC)
     getchar();
 #endif
-    return catastrophicError;
+
     lcm_destroy(lcm);
+    return catastrophicError;
 
 }

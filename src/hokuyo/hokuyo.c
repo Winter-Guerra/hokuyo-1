@@ -14,12 +14,13 @@
 
 #include <glib.h>
 #include <lcm/lcm.h>
+#include <lcmtypes/lcmtypes.h>
 
 
 #define SKIP_SCANS 0 // Number of scans to skip [0,9]
 #define PUBLISHING_CHANNEL "scan"
 
-#include <bot_core/bot_core.h>
+//#include <bot_core/bot_core.h>
 
 #define TO_DEGREES(rad) ((rad)*180/M_PI)
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
       // Output to LCM.
 
       // 	int64_t  utime;
-      msg.timestampJetson = timestamp+time_stamp_offset;
+      msg.utime = timestamp+time_stamp_offset;
 
       // Copy and convert scan data from mm to m
       int i;

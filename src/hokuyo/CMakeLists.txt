@@ -19,7 +19,7 @@ add_executable(${POD_NAME}
     )
 
 pods_use_pkg_config_packages(${POD_NAME}
-    bot2-core lcm)
+    bot2-core lcm lcmtypes)
 
 target_link_libraries(${POD_NAME}
     ${LCM_LDFLAGS})

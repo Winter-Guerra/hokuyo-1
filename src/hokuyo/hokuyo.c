@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
     printf("sensor data size: %d\n", urg_max_data_size(&urg));
     printf("timestamp offset: %ld\n", time_stamp_offset);
 
-
-    // @TODO: set timestamp of lidar to that of computer epoch.
+    // Define a timeout
+    urg_set_timeout_msec(&urg, 1000);
 
     // Begin polling the laserscanner for intensity data.
     bool catastrophicError = !!urg_start_measurement(&urg, URG_DISTANCE_INTENSITY, URG_SCAN_INFINITY, SKIP_SCANS);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     if (catastrophicError){
       printf("Catastrophic error from URG %s\n", urg_error(&urg));
       printf("Error #%d\n",urg.last_errno);
-      return urg.last_errno;
+      return abs(urg.last_errno);
     }
 
     long *data = (long*)malloc(urg_max_data_size(&urg) * sizeof(data[0]));
@@ -129,12 +129,18 @@ int main(int argc, char *argv[])
       int n = urg_get_distance_intensity(&urg, data, intensities, &timestamp);
 
       // Check for errors in reading. Kill driver if something bad happens. Allow for procman to handle the restart.
-      catastrophicError = (n<0);
+      // Ignore checksum errors
+      bool error = (n<0);
+      catastrophicError = (error && urg.last_errno != -8);
 
       // error printing
-      if (catastrophicError){
-        printf("Error from URG %s\n", urg_error(&urg));
-        printf("Error #%d\n",urg.last_errno);
+      if (catastrophicError || error){
+        printf("ERROR from URG %s\n", urg_error(&urg));
+        printf("ERROR #%d\n",urg.last_errno);
+      }
+
+      if (catastrophicError) {
+        printf("Rebooting Hokuyo driver.\n\n======================\n");
         break;
       }
 

@@ -3,11 +3,10 @@
 
 /*!
   \file
-  \brief URG ライブラリのエラー定義
-
+  \brief Definition of error codes of URG library
   \author Satofumi KAMIMURA
 
-  $Id$
+  $Id: urg_errno.h,v c5747add6615 2015/05/07 03:18:34 alexandr $
 */
 
 enum {

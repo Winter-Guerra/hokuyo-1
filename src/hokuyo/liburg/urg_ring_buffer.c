@@ -1,10 +1,9 @@
 /*!
   \file
-  \brief リングバッファ
-
+  \brief Implements a ring buffer
   \author Satofumi KAMIMURA
 
-  $Id$
+  $Id: urg_ring_buffer.c,v c5747add6615 2015/05/07 03:18:34 alexandr $
 */
 
 #include "urg_ring_buffer.h"
@@ -54,9 +53,9 @@ int ring_write(ring_buffer_t *ring, const char *data, int size)
     int free_size = ring_capacity(ring) - ring_size(ring);
     int push_size = (size > free_size) ? free_size : size;
 
-    // データ配置
+    // Stores the data
     if (ring->first <= ring->last) {
-        // last から buffer_size 終端までに配置
+        // Stores data at the last element of the buffer and before buffer_size
         int left_size = 0;
         int to_end = ring->buffer_size - ring->last;
         int move_size = (to_end > push_size) ? push_size : to_end;
@@ -67,12 +66,12 @@ int ring_write(ring_buffer_t *ring, const char *data, int size)
 
         left_size = push_size - move_size;
         if (left_size > 0) {
-            // 0 から first の前までを配置
+	    // Stores data before the first element
             byte_move(ring->buffer, &data[move_size], left_size);
             ring->last = left_size;
         }
     } else {
-        // last から first の前まで配置
+        // Stores data from last towards first
         byte_move(&ring->buffer[ring->last], data, size);
         ring->last += push_size;
     }
@@ -82,7 +81,7 @@ int ring_write(ring_buffer_t *ring, const char *data, int size)
 
 int ring_read(ring_buffer_t *ring, char *buffer, int size)
 {
-    // データ取得
+    // Reads data
     int now_size = ring_size(ring);
     int pop_size = (size > now_size) ? now_size : size;
 
@@ -91,7 +90,7 @@ int ring_read(ring_buffer_t *ring, char *buffer, int size)
         ring->first += pop_size;
 
     } else {
-        // first から buffer_size 終端までを配置
+        // Gets data from first element of the buffer and before buffer_size
         int left_size = 0;
         int to_end = ring->buffer_size - ring->first;
         int move_size = (to_end > pop_size) ? pop_size : to_end;
@@ -102,7 +101,7 @@ int ring_read(ring_buffer_t *ring, char *buffer, int size)
 
         left_size = pop_size - move_size;
         if (left_size > 0) {
-            // 0 から last の前までを配置
+	    // Gets data before the last element
             byte_move(&buffer[move_size], ring->buffer, left_size);
 
             ring->first = left_size;

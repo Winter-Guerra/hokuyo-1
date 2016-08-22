@@ -1,10 +1,9 @@
 /*!
   \file
-  \brief í êMÇÃèàóù
-
+  \brief Communication related functions
   \author Satofumi KAMIMURA
 
-  $Id: urg_connection.c,v 0caa22c18f6b 2010/12/30 03:36:32 Satofumi $
+  $Id: urg_connection.c,v c5747add6615 2015/05/07 03:18:34 alexandr $
 */
 
 #include "urg_connection.h"

@@ -1,10 +1,10 @@
 /*!
   \file
-  \brief �V���A���p�̕⏕�֐�
+  \brief Serial communication auxiliary functions for Linux
 
   \author Satofumi KAMIMURA
 
-  $Id: urg_serial_utils_linux.c,v 0caa22c18f6b 2010/12/30 03:36:32 Satofumi $
+  $Id: urg_serial_utils_linux.c,v e5d1719877a2 2015/05/07 04:12:14 jun $
 */
 
 #include "urg_serial_utils.h"
@@ -84,8 +84,8 @@ const char *urg_serial_port_name(int index)
 
 int urg_serial_is_urg_port(int index)
 {
-    // Linux �̏ꍇ�A�|�[�g�� URG ���ǂ����͒f���ł��Ȃ�
-    // !!! �]�͂������΁Admesg �Ȃǂ̏o�͂��画�肷���悤�ɂ��Ă��悢
+    // In Linux we cannot check if the port is an URG or not
+    // With some spare time we may get this from dmesg or something
     (void)index;
     return 0;
 }

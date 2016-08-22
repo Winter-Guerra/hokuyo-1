@@ -1,32 +1,28 @@
 /*!
   \file
-  \brief �V���A���ʐM
-
+   Serial communications in Linux
   \author Satofumi KAMIMURA
 
-  $Id$
+  $Id: urg_serial_linux.c,v c5747add6615 2015/05/07 03:18:34 alexandr $
 */
 
 #include "urg_ring_buffer.h"
+#include <urg_serial.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <sys/types.h>
+#include <stdbool.h>
 
 
 enum {
-    INVALID_FD = -1
+    INVALID_FD = -1,
 };
-//
-// enum {
-//     False = 0,
-//     True,
-// };
 
 
 static void serial_initialize(urg_serial_t *serial)
 {
     serial->fd = INVALID_FD;
-    serial->has_last_ch = False;
+    serial->has_last_ch = false;
 
     ring_initialize(&serial->ring, serial->buffer, RING_BUFFER_SIZE_SHIFT);
 }
@@ -37,7 +33,7 @@ static void serial_clear(urg_serial_t* serial)
     tcdrain(serial->fd);
     tcflush(serial->fd, TCIOFLUSH);
     ring_clear(&serial->ring);
-    serial->has_last_ch = False;
+    serial->has_last_ch = false;
 }
 
 
@@ -49,11 +45,11 @@ int serial_open(urg_serial_t *serial, const char *device, long baudrate)
     serial_initialize(serial);
 
 #ifndef URG_MAC_OS
-    enum { O_EXLOCK = 0x0 }; /* Linux �ł͎g���Ȃ��̂Ń_�~�[���쐬���Ă��� */
+    enum { O_EXLOCK = 0x0 }; /*  Not used in Linux, used as dummy */
 #endif
     serial->fd = open(device, O_RDWR | O_EXLOCK | O_NONBLOCK | O_NOCTTY);
     if (serial->fd < 0) {
-        /* �ڑ��Ɏ��s */
+        /*  Connection failed */
         //strerror_r(errno, serial->error_string, ERROR_MESSAGE_SIZE);
         return -1;
     }
@@ -61,7 +57,7 @@ int serial_open(urg_serial_t *serial, const char *device, long baudrate)
     flags = fcntl(serial->fd, F_GETFL, 0);
     fcntl(serial->fd, F_SETFL, flags & ~O_NONBLOCK);
 
-    /* �V���A���ʐM�̏����� */
+    /*  Initializes serial communication  */
     tcgetattr(serial->fd, &serial->sio);
     serial->sio.c_iflag = 0;
     serial->sio.c_oflag = 0;
@@ -72,14 +68,13 @@ int serial_open(urg_serial_t *serial, const char *device, long baudrate)
     serial->sio.c_cc[VMIN] = 0;
     serial->sio.c_cc[VTIME] = 0;
 
-    /* �{�[���[�g�̕ύX */
     ret = serial_set_baudrate(serial, baudrate);
     if (ret < 0) {
         return ret;
     }
 
-    /* �V���A�������\���̂̏����� */
-    serial->has_last_ch = False;
+    /*  Initializes serial control structures */
+    serial->has_last_ch = false;
 
     return 0;
 }
@@ -127,7 +122,7 @@ int serial_set_baudrate(urg_serial_t *serial, long baudrate)
         return -1;
     }
 
-    /* �{�[���[�g�ύX */
+    /*  Changes the baudrate */
     cfsetospeed(&serial->sio, baudrate_value);
     cfsetispeed(&serial->sio, baudrate_value);
     tcsetattr(serial->fd, TCSADRAIN, &serial->sio);
@@ -151,7 +146,7 @@ static int wait_receive(urg_serial_t* serial, int timeout)
     fd_set rfds;
     struct timeval tv;
 
-    // �^�C���A�E�g�ݒ�
+    // Configures the timeout
     FD_ZERO(&rfds);
     FD_SET(serial->fd, &rfds);
 
@@ -160,7 +155,7 @@ static int wait_receive(urg_serial_t* serial, int timeout)
 
     if (select(serial->fd + 1, &rfds, NULL, NULL,
                (timeout < 0) ? NULL : &tv) <= 0) {
-        /* �^�C���A�E�g���� */
+        /*  Timeout occurred */
         return 0;
     }
     return 1;
@@ -187,7 +182,7 @@ static int internal_receive(char data[], int data_size_max,
         require_n = data_size_max - filled;
         read_n = read(serial->fd, &data[filled], require_n);
         if (read_n <= 0) {
-            /* �ǂݏo���G���[�B���݂܂ł̎��M���e�Ŗ߂� */
+            /*  Read error, returns all the data up to now */
             break;
         }
         filled += read_n;
@@ -206,10 +201,10 @@ int serial_read(urg_serial_t *serial, char *data, int max_size, int timeout)
         return 0;
     }
 
-    /* �����߂����P�����������΁A�����o�� */
-    if (serial->has_last_ch != False) {
+    /*  If there is a single character return it */
+    if (serial->has_last_ch != false) {
         data[0] = serial->last_ch;
-        serial->has_last_ch = False;
+        serial->has_last_ch = false;
         ++filled;
     }
     if (serial->fd == INVALID_FD) {
@@ -223,7 +218,7 @@ int serial_read(urg_serial_t *serial, char *data, int max_size, int timeout)
     buffer_size = ring_size(&serial->ring);
     read_n = max_size - filled;
     if (buffer_size < read_n) {
-        // �����O�o�b�t�@���̃f�[�^�ő����Ȃ����΁A�f�[�^���ǂݑ���
+        // Reads data if there is space in the ring buffer
         char buffer[RING_BUFFER_SIZE];
         int n = internal_receive(buffer,
                                  ring_capacity(&serial->ring) - buffer_size,
@@ -234,7 +229,7 @@ int serial_read(urg_serial_t *serial, char *data, int max_size, int timeout)
         }
     }
 
-    // �����O�o�b�t�@���̃f�[�^���Ԃ�
+    // Returns the data stored in the ring buffer
     if (read_n > buffer_size) {
         read_n = buffer_size;
     }
@@ -243,7 +238,7 @@ int serial_read(urg_serial_t *serial, char *data, int max_size, int timeout)
         filled += read_n;
     }
 
-    // �f�[�^���^�C���A�E�g�t���œǂݏo��
+    // Reads data within the given timeout
     filled += internal_receive(&data[filled], max_size - filled,
                                serial, timeout);
     return filled;

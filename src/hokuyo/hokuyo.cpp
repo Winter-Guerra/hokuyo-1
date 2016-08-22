@@ -134,9 +134,12 @@ int main(int argc, char *argv[])
 
                         // error printing
                         if (catastrophicError) {
+                                printf("##############################\n");
                                 printf("Error from URG %s\n", urg.what());
                                 // printf("Error #%d\n",urg.last_errno);
-                                break;
+                                // Restart the measurement process.
+                                catastrophicError = !urg.start_measurement(Urg_driver::Distance_intensity, Urg_driver::Infinity_times, SKIP_SCANS);
+                                continue;
                         }
 
 
@@ -169,8 +172,8 @@ int main(int argc, char *argv[])
                 // Delay for 25ms
                 struct timespec timeOut,remains;
                 timeOut.tv_sec = 0;
-                timeOut.tv_nsec = 25*10+6;
-                nanosleep(&timeOut, &remains);//25ms
+                timeOut.tv_nsec = 100*10+6;
+                nanosleep(&timeOut, &remains);//100ms
         }
 
 }

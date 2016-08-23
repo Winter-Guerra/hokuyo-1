@@ -1,11 +1,11 @@
 /*!
-  \brief URG ƒZƒ“ƒT§Œä
+  \brief URG ï¿½Zï¿½ï¿½ï¿½Tï¿½ï¿½ï¿½ï¿½
 
   \author Satofumi KAMIMURA
 
   $Id: urg_sensor.c,v 66816edea765 2011/05/03 06:53:52 satofumi $
 
-  \todo Mx Œv‘ª’†‚É‘¼‚Ì Mx ƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚½‚Æ‚«‚ÉA“KØ‚É“®ì‚·‚é‚æ‚¤‚É‚·‚é
+  \todo Mx ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½É‘ï¿½ï¿½ï¿½ Mx ï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½ğ‘—Mï¿½ï¿½ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ÉAï¿½Kï¿½Ø‚É“ï¿½ï¿½ì‚·ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
 */
 
 #include "urg_sensor.h"
@@ -29,13 +29,13 @@ enum {
     EXPECTED_END = -1,
 
     RECEIVE_DATA_TIMEOUT,
-    RECEIVE_DATA_COMPLETE,      /*!< ƒf[ƒ^‚ğ³í‚ÉóM */
+    RECEIVE_DATA_COMPLETE,      /*!< ï¿½fï¿½[ï¿½^ï¿½ğ³ï¿½ï¿½Éï¿½ï¿½M */
 
     PP_RESPONSE_LINES = 10,
     VV_RESPONSE_LINES = 7,
     II_RESPONSE_LINES = 9,
 
-    MAX_TIMEOUT = 140,
+    MAX_TIMEOUT = 500,
 };
 
 
@@ -43,7 +43,7 @@ static const char NOT_CONNECTED_MESSAGE[] = "not connected.";
 static const char RECEIVE_ERROR_MESSAGE[] = "receive error.";
 
 
-//! ƒ`ƒFƒbƒNƒTƒ€‚ÌŒvZ
+//! ï¿½`ï¿½Fï¿½bï¿½Nï¿½Tï¿½ï¿½ï¿½ÌŒvï¿½Z
 static char scip_checksum(const char buffer[], int size)
 {
     unsigned char sum = 0x00;
@@ -53,7 +53,7 @@ static char scip_checksum(const char buffer[], int size)
         sum += buffer[i];
     }
 
-    // ŒvZ‚ÌˆÓ–¡‚Í SCIP d—l‘‚ğQÆ‚Ì‚±‚Æ
+    // ï¿½vï¿½Zï¿½ÌˆÓ–ï¿½ï¿½ï¿½ SCIP ï¿½dï¿½lï¿½ï¿½ï¿½ï¿½ï¿½Qï¿½Æ‚Ì‚ï¿½ï¿½ï¿½
     return (sum & 0x3f) + 0x30;
 }
 
@@ -65,7 +65,7 @@ static int set_errno_and_return(urg_t *urg, int urg_errno)
 }
 
 
-// óM‚µ‚½‰“š‚Ìs”‚ğ•Ô‚·
+// ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìsï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½
 static int scip_response(urg_t *urg, const char* command,
                          const int expected_ret[], int timeout,
                          char *receive_buffer, int receive_buffer_max_size)
@@ -94,7 +94,7 @@ static int scip_response(urg_t *urg, const char* command,
 
         } else if (p && (line_number > 0)
                    && (n < (receive_buffer_max_size - filled_size))) {
-            // ƒGƒR[ƒoƒbƒN‚ÍŠ®‘Sˆê’v‚Ìƒ`ƒFƒbƒN‚ğs‚¤‚½‚ßAŠi”[‚µ‚È‚¢
+            // ï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½ÍŠï¿½ï¿½Sï¿½ï¿½ï¿½vï¿½Ìƒ`ï¿½Fï¿½bï¿½Nï¿½ï¿½ï¿½sï¿½ï¿½ï¿½ï¿½ï¿½ßAï¿½iï¿½[ï¿½ï¿½ï¿½È‚ï¿½
             memcpy(p, buffer, n);
             p += n;
             *p++ = '\0';
@@ -102,12 +102,12 @@ static int scip_response(urg_t *urg, const char* command,
         }
 
         if (line_number == 0) {
-            // ƒGƒR[ƒoƒbƒN•¶š—ñ‚ªAˆê’v‚·‚é‚©‚ğŠm”F‚·‚é
+            // ï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½ñ‚ªAï¿½ï¿½ï¿½vï¿½ï¿½ï¿½é‚©ï¿½ï¿½ï¿½mï¿½Fï¿½ï¿½ï¿½ï¿½
             if (strncmp(buffer, command, write_size - 1)) {
                 return set_errno_and_return(urg, URG_INVALID_RESPONSE);
             }
         } else if (n > 0) {
-            // ƒGƒR[ƒoƒbƒNˆÈŠO‚Ìs‚Ìƒ`ƒFƒbƒNƒTƒ€‚ğ•]‰¿‚·‚é
+            // ï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½ÈŠOï¿½Ìsï¿½Ìƒ`ï¿½Fï¿½bï¿½Nï¿½Tï¿½ï¿½ï¿½ï¿½ï¿½]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             char checksum = buffer[n - 1];
             if ((checksum != scip_checksum(buffer, n - 1)) &&
                 (checksum != scip_checksum(buffer, n - 2))) {
@@ -115,10 +115,10 @@ static int scip_response(urg_t *urg, const char* command,
             }
         }
 
-        // ƒXƒe[ƒ^ƒX‰“š‚ğ•]‰¿‚µ‚ÄA–ß‚è’l‚ğŒˆ’è‚·‚é
+        // ï¿½Xï¿½eï¿½[ï¿½^ï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]ï¿½ï¿½ï¿½ï¿½ï¿½ÄAï¿½ß‚ï¿½ï¿½lï¿½ï¿½ï¿½ï¿½ï¿½è‚·ï¿½ï¿½
         if (line_number == 1) {
             if (n == 1) {
-                // SCIP 1.1 ‰“š‚Ìê‡‚ÍA³í‰“š‚Æ‚İ‚È‚·
+                // SCIP 1.1 ï¿½ï¿½ï¿½ï¿½ï¿½Ìê‡ï¿½ÍAï¿½ï¿½ï¿½í‰ï¿½ï¿½ï¿½Æ‚İ‚È‚ï¿½
                 ret = 0;
 
             } else if (n != 3) {
@@ -182,15 +182,15 @@ static int change_sensor_baudrate(urg_t *urg,
     int ret;
 
     if (current_baudrate == next_baudrate) {
-        // Œ»İ‚Ìƒ{[ƒŒ[ƒg‚Æİ’è‚·‚éƒ{[ƒŒ[ƒg‚ªˆê‚È‚ç‚ÎA–ß‚é
+        // ï¿½ï¿½ï¿½İ‚Ìƒ{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½Æİ’è‚·ï¿½ï¿½ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½êï¿½È‚ï¿½ï¿½ÎAï¿½ß‚ï¿½
         return set_errno_and_return(urg, URG_NO_ERROR);
     }
 
-    // "SS" ƒRƒ}ƒ“ƒh‚Åƒ{[ƒŒ[ƒg‚ğ•ÏX‚·‚é
+    // "SS" ï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½Åƒ{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½ï¿½
     snprintf(buffer, SS_COMMAND_SIZE, "SS%06ld\n", next_baudrate);
     ret = scip_response(urg, buffer, ss_expected, urg->timeout, NULL, 0);
 
-    // 0F ‰“š‚Ì‚Æ‚«‚Í Ethernet —p‚ÌƒZƒ“ƒT‚Æ‚İ‚È‚µA³í‰“š‚ğ•Ô‚·
+    // 0F ï¿½ï¿½ï¿½ï¿½ï¿½Ì‚Æ‚ï¿½ï¿½ï¿½ Ethernet ï¿½pï¿½ÌƒZï¿½ï¿½ï¿½Tï¿½Æ‚İ‚È‚ï¿½ï¿½Aï¿½ï¿½ï¿½í‰ï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½
     if (ret == -15) {
         return set_errno_and_return(urg, URG_NO_ERROR);
     }
@@ -198,24 +198,24 @@ static int change_sensor_baudrate(urg_t *urg,
         return set_errno_and_return(urg, URG_INVALID_PARAMETER);
     }
 
-    // ³í‰“š‚È‚ç‚ÎAƒzƒXƒg‘¤‚Ìƒ{[ƒŒ[ƒg‚ğ•ÏX‚·‚é
+    // ï¿½ï¿½ï¿½í‰ï¿½ï¿½ï¿½È‚ï¿½ï¿½ÎAï¿½zï¿½Xï¿½gï¿½ï¿½ï¿½Ìƒ{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½ï¿½
     ret = connection_set_baudrate(&urg->connection, next_baudrate);
 
-    // ƒZƒ“ƒT‘¤‚Ìİ’è”½‰f‚ğ‘Ò‚Â‚½‚ß‚É­‚µ‚¾‚¯‘Ò‹@‚·‚é
+    // ï¿½Zï¿½ï¿½ï¿½Tï¿½ï¿½ï¿½Ìİ’è”½ï¿½fï¿½ï¿½ï¿½Ò‚Â‚ï¿½ï¿½ß‚Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò‹@ï¿½ï¿½ï¿½ï¿½
     ignore_receive_data(urg, MAX_TIMEOUT);
 
     return set_errno_and_return(urg, ret);
 }
 
 
-// ƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚È‚ª‚çÚ‘±‚·‚é
+// ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½Ú‘ï¿½ï¿½ï¿½ï¿½ï¿½
 static int connect_urg_device(urg_t *urg, long baudrate)
 {
     long try_baudrate[] = { 19200, 38400, 115200 };
     int try_times = sizeof(try_baudrate) / sizeof(try_baudrate[0]);
     int i;
 
-    // w¦‚³‚ê‚½ƒ{[ƒŒ[ƒg‚©‚çÚ‘±‚·‚é
+    // ï¿½wï¿½ï¿½ï¿½ï¿½ï¿½ê‚½ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½Ú‘ï¿½ï¿½ï¿½ï¿½ï¿½
     for (i = 0; i < try_times; ++i) {
         if (try_baudrate[i] == baudrate) {
             try_baudrate[i] = try_baudrate[0];
@@ -232,55 +232,55 @@ static int connect_urg_device(urg_t *urg, long baudrate)
 
         connection_set_baudrate(&urg->connection, try_baudrate[i]);
 
-        // QT ‚ğ‘—M‚µA‰“š‚ª•Ô‚³‚ê‚é‚©‚Åƒ{[ƒŒ[ƒg‚ªˆê’v‚µ‚Ä‚¢‚é‚©‚ğŠm”F‚·‚é
+        // QT ï¿½ğ‘—Mï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½é‚©ï¿½Åƒ{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚©ï¿½ï¿½ï¿½mï¿½Fï¿½ï¿½ï¿½ï¿½
         ret = scip_response(urg, "QT\n", qt_expected, MAX_TIMEOUT,
                             receive_buffer, RECEIVE_BUFFER_SIZE);
         if (ret > 0) {
             if (!strcmp(receive_buffer, "E")) {
                 int scip20_expected[] = { 0, EXPECTED_END };
 
-                // QT ‰“š‚ÌÅŒã‚Ì‰üs‚ğ“Ç‚İ”ò‚Î‚·
+                // QT ï¿½ï¿½ï¿½ï¿½ï¿½ÌÅŒï¿½ï¿½Ì‰ï¿½ï¿½sï¿½ï¿½ï¿½Ç‚İ”ï¿½ï¿½Î‚ï¿½
                 ignore_receive_data(urg, MAX_TIMEOUT);
 
-                // "E" ‚ª•Ô‚³‚ê‚½ê‡‚ÍASCIP 1.1 ‚Æ‚İ‚È‚µ "SCIP2.0" ‚ğ‘—M‚·‚é
+                // "E" ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ê‚½ï¿½ê‡ï¿½ÍASCIP 1.1 ï¿½Æ‚İ‚È‚ï¿½ "SCIP2.0" ï¿½ğ‘—Mï¿½ï¿½ï¿½ï¿½
                 ret = scip_response(urg, "SCIP2.0\n", scip20_expected,
                                     MAX_TIMEOUT, NULL, 0);
 
-                // SCIP2.0 ‰“š‚ÌÅŒã‚Ì‰üs‚ğ“Ç‚İ”ò‚Î‚·
+                // SCIP2.0 ï¿½ï¿½ï¿½ï¿½ï¿½ÌÅŒï¿½ï¿½Ì‰ï¿½ï¿½sï¿½ï¿½ï¿½Ç‚İ”ï¿½ï¿½Î‚ï¿½
                 ignore_receive_data(urg, MAX_TIMEOUT);
 
-                // ƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚Ä–ß‚é
+                // ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½Ä–ß‚ï¿½
                 return change_sensor_baudrate(urg, try_baudrate[i], baudrate);
 
             } else if (!strcmp(receive_buffer, "0Ee")) {
                 int tm2_expected[] = { 0, EXPECTED_END };
 
-                // "0Ee" ‚ª•Ô‚³‚ê‚½ê‡‚ÍATM ƒ‚[ƒh‚Æ‚İ‚È‚µ "TM2" ‚ğ‘—M‚·‚é
+                // "0Ee" ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ê‚½ï¿½ê‡ï¿½ÍATM ï¿½ï¿½ï¿½[ï¿½hï¿½Æ‚İ‚È‚ï¿½ "TM2" ï¿½ğ‘—Mï¿½ï¿½ï¿½ï¿½
                 scip_response(urg, "TM2\n", tm2_expected,
                               MAX_TIMEOUT, NULL, 0);
 
-                // ƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚Ä–ß‚é
+                // ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½Ä–ß‚ï¿½
                 return change_sensor_baudrate(urg, try_baudrate[i], baudrate);
             }
         }
 
         if (ret <= 0) {
             if (ret == URG_INVALID_RESPONSE) {
-                // ˆÙí‚ÈƒGƒR[ƒoƒbƒN‚Ì‚Æ‚«‚ÍA‹——£ƒf[ƒ^óM’†‚Æ‚İ‚È‚µ‚Ä
-                // ƒf[ƒ^‚ğ“Ç‚İ”ò‚Î‚·
+                // ï¿½Ùï¿½ï¿½ÈƒGï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½Ì‚Æ‚ï¿½ï¿½ÍAï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½Æ‚İ‚È‚ï¿½ï¿½ï¿½
+                // ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½Ç‚İ”ï¿½ï¿½Î‚ï¿½
                 ignore_receive_data_with_qt(urg, MAX_TIMEOUT);
 
-                // ƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚Ä–ß‚é
+                // ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½Ä–ß‚ï¿½
                 return change_sensor_baudrate(urg, try_baudrate[i], baudrate);
 
             } else {
-                // ‰“š‚ª‚È‚¢‚Æ‚«‚ÍAƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚ÄAÄ“xÚ‘±‚ğs‚¤
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½Æ‚ï¿½ï¿½ÍAï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½ÄAï¿½Ä“xï¿½Ú‘ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½
                 ignore_receive_data_with_qt(urg, MAX_TIMEOUT);
                 continue;
             }
         } else if (!strcmp("00P", receive_buffer)) {
 
-            // ƒZƒ“ƒT‚ÆƒzƒXƒg‚Ìƒ{[ƒŒ[ƒg‚ğ•ÏX‚µ‚Ä–ß‚é
+            // ï¿½Zï¿½ï¿½ï¿½Tï¿½Æƒzï¿½Xï¿½gï¿½Ìƒ{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ï¿½ÏXï¿½ï¿½ï¿½Ä–ß‚ï¿½
             return change_sensor_baudrate(urg, try_baudrate[i], baudrate);
         }
     }
@@ -289,7 +289,7 @@ static int connect_urg_device(urg_t *urg, long baudrate)
 }
 
 
-// PP ƒRƒ}ƒ“ƒh‚Ì‰“š‚ğ urg_t ‚ÉŠi”[‚·‚é
+// PP ï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½Ì‰ï¿½ï¿½ï¿½ï¿½ï¿½ urg_t ï¿½ÉŠiï¿½[ï¿½ï¿½ï¿½ï¿½
 static int receive_parameter(urg_t *urg)
 {
     enum { RECEIVE_BUFFER_SIZE = BUFFER_SIZE * 9, };
@@ -337,7 +337,7 @@ static int receive_parameter(urg_t *urg)
 
         } else if (!strncmp(p, "SCAN:", 5)) {
             int rpm = strtol(p + 5, NULL, 10);
-            // ƒ^ƒCƒ€ƒAƒEƒgŠÔ‚ÍAŒv‘ªüŠú‚Ì 16 ”{’ö“x‚Ì’l‚É‚·‚é
+            // ï¿½^ï¿½Cï¿½ï¿½ï¿½Aï¿½Eï¿½gï¿½ï¿½ï¿½Ô‚ÍAï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 16 ï¿½{ï¿½ï¿½ï¿½xï¿½Ì’lï¿½É‚ï¿½ï¿½ï¿½
             urg->scan_usec = 1000 * 1000 * 60 / rpm;
             urg->timeout = urg->scan_usec >> (10 - 4);
             received_bits |= 0x0040;
@@ -345,7 +345,7 @@ static int receive_parameter(urg_t *urg)
         p += strlen(p) + 1;
     }
 
-    // ‘S‚Ä‚Ìƒpƒ‰ƒ[ƒ^‚ğóM‚µ‚½‚©Šm”F
+    // ï¿½Sï¿½Ä‚Ìƒpï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½F
     if (received_bits != 0x007f) {
         return set_errno_and_return(urg, URG_RECEIVE_ERROR);
     }
@@ -359,7 +359,7 @@ static int receive_parameter(urg_t *urg)
 }
 
 
-//! SCIP •¶š—ñ‚ÌƒfƒR[ƒh
+//! SCIP ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìƒfï¿½Rï¿½[ï¿½h
 long urg_scip_decode(const char data[], int size)
 {
     const char* p = data;
@@ -412,7 +412,7 @@ static urg_measurement_type_t parse_distance_parameter(urg_t *urg,
         return URG_UNKNOWN;
     }
 
-    // ƒpƒ‰ƒ[ƒ^‚ÌŠi”[
+    // ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½ÌŠiï¿½[
     urg->received_first_index = parse_parameter(&echoback[2], 4);
     urg->received_last_index = parse_parameter(&echoback[6], 4);
     urg->received_skip_step = parse_parameter(&echoback[10], 2);
@@ -478,7 +478,7 @@ static int receive_length_data(urg_t *urg, long length[],
                                 urg->timeout);
 
         if (n > 0) {
-            // ƒ`ƒFƒbƒNƒTƒ€‚Ì•]‰¿
+            // ï¿½`ï¿½Fï¿½bï¿½Nï¿½Tï¿½ï¿½ï¿½Ì•]ï¿½ï¿½
             if (buffer[line_filled + n - 1] !=
                 scip_checksum(&buffer[line_filled], n - 1)) {
                 ignore_receive_data_with_qt(urg, urg->timeout);
@@ -495,10 +495,10 @@ static int receive_length_data(urg_t *urg, long length[],
             int index;
 
             if (*p == '&') {
-                // æ“ª•¶š‚ª '&' ‚¾‚Á‚½‚Æ‚«‚ÍAƒ}ƒ‹ƒ`ƒGƒR[‚Ìƒf[ƒ^‚Æ‚İ‚È‚·
+                // ï¿½æ“ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '&' ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ÍAï¿½}ï¿½ï¿½ï¿½`ï¿½Gï¿½Rï¿½[ï¿½Ìƒfï¿½[ï¿½^ï¿½Æ‚İ‚È‚ï¿½
 
                 if ((last_p - (p + 1)) < data_size) {
-                    // '&' ‚ğœ‚¢‚ÄAdata_size •ªƒf[ƒ^‚ª–³‚¯‚ê‚Î”²‚¯‚é
+                    // '&' ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄAdata_size ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î”ï¿½ï¿½ï¿½ï¿½ï¿½
                     break;
                 }
 
@@ -508,7 +508,7 @@ static int receive_length_data(urg_t *urg, long length[],
                 --line_filled;
 
             } else {
-                // Ÿ‚Ìƒf[ƒ^
+                // ï¿½ï¿½ï¿½Ìƒfï¿½[ï¿½^
                 multiecho_index = 0;
             }
 
@@ -516,14 +516,14 @@ static int receive_length_data(urg_t *urg, long length[],
 
             if (step_filled >
                 (urg->received_last_index - urg->received_first_index)) {
-                // ƒf[ƒ^‚ª‘½‰ß‚¬‚éê‡‚ÍAc‚è‚Ìƒf[ƒ^‚ğ–³‹‚µ‚Ä–ß‚é
+                // ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ß‚ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ÍAï¿½cï¿½ï¿½ï¿½Ìƒfï¿½[ï¿½^ï¿½ğ–³ï¿½ï¿½ï¿½ï¿½Ä–ß‚ï¿½
                 ignore_receive_data_with_qt(urg, urg->timeout);
                 return set_errno_and_return(urg, URG_RECEIVE_ERROR);
             }
 
 
             if (is_multiecho && (multiecho_index == 0)) {
-                // ƒ}ƒ‹ƒ`ƒGƒR[‚Ìƒf[ƒ^Ši”[æ‚ğƒ_ƒ~[ƒf[ƒ^‚Å–„‚ß‚é
+                // ï¿½}ï¿½ï¿½ï¿½`ï¿½Gï¿½Rï¿½[ï¿½Ìƒfï¿½[ï¿½^ï¿½iï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½~ï¿½[ï¿½fï¿½[ï¿½^ï¿½Å–ï¿½ï¿½ß‚ï¿½
                 int i;
                 if (length) {
                     for (i = 1; i < multiecho_max_size; ++i) {
@@ -537,13 +537,13 @@ static int receive_length_data(urg_t *urg, long length[],
                 }
             }
 
-            // ‹——£ƒf[ƒ^‚ÌŠi”[
+            // ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ÌŠiï¿½[
             if (length) {
                 length[index] = urg_scip_decode(p, 3);
             }
             p += 3;
 
-            // ‹­“xƒf[ƒ^‚ÌŠi”[
+            // ï¿½ï¿½ï¿½xï¿½fï¿½[ï¿½^ï¿½ÌŠiï¿½[
             if (is_intensity) {
                 if (intensity) {
                     intensity[index] = (unsigned short)urg_scip_decode(p, 3);
@@ -555,7 +555,7 @@ static int receive_length_data(urg_t *urg, long length[],
             line_filled -= data_size;
         }
 
-        // Ÿ‚Éˆ—‚·‚é•¶š‚ğ‘Ş”ğ
+        // ï¿½ï¿½ï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é•¶ï¿½ï¿½ï¿½ï¿½ï¿½Ş”ï¿½
         memmove(buffer, p, line_filled);
     } while (n > 0);
 
@@ -563,7 +563,7 @@ static int receive_length_data(urg_t *urg, long length[],
 }
 
 
-//! ‹——£ƒf[ƒ^‚Ìæ“¾
+//! ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½Ìæ“¾
 static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
                         long *time_stamp)
 {
@@ -574,16 +574,16 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
     int extended_timeout = urg->timeout
         + 2 * (urg->scan_usec * (urg->scanning_skip_scan) / 1000);
 
-    // ƒGƒR[ƒoƒbƒN‚Ìæ“¾
+    // ï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½Ìæ“¾
     n = connection_readline(&urg->connection,
                             buffer, BUFFER_SIZE, extended_timeout);
     if (n <= 0) {
         return set_errno_and_return(urg, URG_NO_RESPONSE);
     }
-    // ƒGƒR[ƒoƒbƒN‚Ì‰ğÍ
+    // ï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½Ì‰ï¿½ï¿½ï¿½
     type = parse_distance_echoback(urg, buffer);
 
-    // ‰“š‚Ìæ“¾
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ìæ“¾
     n = connection_readline(&urg->connection,
                             buffer, BUFFER_SIZE, urg->timeout);
     if (n != 3) {
@@ -592,13 +592,13 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
     }
 
     if (buffer[n - 1] != scip_checksum(buffer, n - 1)) {
-        // ƒ`ƒFƒbƒNƒTƒ€‚Ì•]‰¿
+        // ï¿½`ï¿½Fï¿½bï¿½Nï¿½Tï¿½ï¿½ï¿½Ì•]ï¿½ï¿½
         ignore_receive_data_with_qt(urg, urg->timeout);
         return set_errno_and_return(urg, URG_CHECKSUM_ERROR);
     }
 
     if (type == URG_STOP) {
-        // QT ‰“š‚Ìê‡‚É‚ÍAÅŒã‚Ì‰üs‚ğ“Ç‚İÌ‚ÄA³í‰“š‚Æ‚µ‚Äˆ—‚·‚é
+        // QT ï¿½ï¿½ï¿½ï¿½ï¿½Ìê‡ï¿½É‚ÍAï¿½ÅŒï¿½ï¿½Ì‰ï¿½ï¿½sï¿½ï¿½ï¿½Ç‚İÌ‚ÄAï¿½ï¿½ï¿½í‰ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½Äï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         n = connection_readline(&urg->connection,
                                 buffer, BUFFER_SIZE, urg->timeout);
         if (n == 0) {
@@ -610,8 +610,8 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
 
     if (urg->specified_scan_times != 1) {
         if (!strncmp(buffer, "00", 2)) {
-            // "00" ‰“š‚Ìê‡‚ÍAƒGƒR[ƒoƒbƒN‰“š‚Æ‚İ‚È‚µA
-            // ÅŒã‚Ì‹ós‚ğ“Ç‚İÌ‚ÄAŸ‚©‚ç‚Ìƒf[ƒ^‚ğ•Ô‚·
+            // "00" ï¿½ï¿½ï¿½ï¿½ï¿½Ìê‡ï¿½ÍAï¿½Gï¿½Rï¿½[ï¿½oï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½Æ‚İ‚È‚ï¿½ï¿½A
+            // ï¿½ÅŒï¿½ï¿½Ì‹ï¿½ï¿½sï¿½ï¿½ï¿½Ç‚İÌ‚ÄAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìƒfï¿½[ï¿½^ï¿½ï¿½ï¿½Ô‚ï¿½
             n = connection_readline(&urg->connection,
                                     buffer, BUFFER_SIZE, urg->timeout);
 
@@ -631,14 +631,14 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
         }
 
         if (type == URG_UNKNOWN) {
-            // Gx, Hx ‚Ì‚Æ‚«‚Í 00P ‚ª•Ô‚³‚ê‚½‚Æ‚«‚ªƒf[ƒ^
-            // Mx, Nx ‚Ì‚Æ‚«‚Í 99b ‚ª•Ô‚³‚ê‚½‚Æ‚«‚ªƒf[ƒ^
+            // Gx, Hx ï¿½Ì‚Æ‚ï¿½ï¿½ï¿½ 00P ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ê‚½ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^
+            // Mx, Nx ï¿½Ì‚Æ‚ï¿½ï¿½ï¿½ 99b ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ê‚½ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^
             ignore_receive_data_with_qt(urg, urg->timeout);
             return set_errno_and_return(urg, URG_INVALID_RESPONSE);
         }
     }
 
-    // ƒ^ƒCƒ€ƒXƒ^ƒ“ƒv‚Ìæ“¾
+    // ï¿½^ï¿½Cï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½vï¿½Ìæ“¾
     n = connection_readline(&urg->connection,
                             buffer, BUFFER_SIZE, urg->timeout);
     if (n > 0) {
@@ -647,7 +647,7 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
         }
     }
 
-    // ƒf[ƒ^‚Ìæ“¾
+    // ï¿½fï¿½[ï¿½^ï¿½Ìæ“¾
     switch (type) {
     case URG_DISTANCE:
     case URG_MULTIECHO:
@@ -665,11 +665,11 @@ static int receive_data(urg_t *urg, long data[], unsigned short intensity[],
         break;
     }
 
-    // specified_scan_times == 1 ‚Ì‚Æ‚«‚Í Gx ŒnƒRƒ}ƒ“ƒh‚ªg‚í‚ê‚é‚½‚ß
-    // ƒf[ƒ^‚ğ–¾¦“I‚É’â~‚µ‚È‚­‚Ä‚æ‚¢
+    // specified_scan_times == 1 ï¿½Ì‚Æ‚ï¿½ï¿½ï¿½ Gx ï¿½nï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½é‚½ï¿½ï¿½
+    // ï¿½fï¿½[ï¿½^ï¿½ğ–¾ï¿½ï¿½Iï¿½É’ï¿½ï¿½~ï¿½ï¿½ï¿½È‚ï¿½ï¿½Ä‚æ‚¢
     if ((urg->specified_scan_times > 1) && (urg->scanning_remain_times > 0)) {
         if (--urg->scanning_remain_times <= 0) {
-            // ƒf[ƒ^‚Ì’â~‚Ì‚İ‚ğs‚¤
+            // ï¿½fï¿½[ï¿½^ï¿½Ì’ï¿½ï¿½~ï¿½Ì‚İ‚ï¿½ï¿½sï¿½ï¿½
             urg_stop_measurement(urg);
         }
     }
@@ -690,7 +690,7 @@ int urg_open(urg_t *urg, urg_connection_type_t connection_type,
     urg->scanning_skip_scan = 0;
     urg->error_handler = NULL;
 
-    // ƒfƒoƒCƒX‚Ö‚ÌÚ‘±
+    // ï¿½fï¿½oï¿½Cï¿½Xï¿½Ö‚ÌÚ‘ï¿½
     ret = connection_open(&urg->connection, connection_type,
                           device_or_address, baudrate_or_port);
 
@@ -711,9 +711,9 @@ int urg_open(urg_t *urg, urg_connection_type_t connection_type,
         return urg->last_errno;
     }
 
-    // w’è‚µ‚½ƒ{[ƒŒ[ƒg‚Å URG ‚Æ’ÊM‚Å‚«‚é‚æ‚¤‚É’²®
+    // ï¿½wï¿½è‚µï¿½ï¿½ï¿½{ï¿½[ï¿½ï¿½ï¿½[ï¿½gï¿½ï¿½ URG ï¿½Æ’ÊMï¿½Å‚ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É’ï¿½ï¿½ï¿½
     if (connection_type == URG_ETHERNET) {
-        // Ethernet ‚Ì‚Æ‚«‚Í‰¼‚Ì’ÊM‘¬“x‚ğw’è‚µ‚Ä‚¨‚­
+        // Ethernet ï¿½Ì‚Æ‚ï¿½ï¿½Í‰ï¿½ï¿½Ì’ÊMï¿½ï¿½ï¿½xï¿½ï¿½ï¿½wï¿½è‚µï¿½Ä‚ï¿½ï¿½ï¿½
         baudrate = 115200;
     }
 
@@ -722,14 +722,14 @@ int urg_open(urg_t *urg, urg_connection_type_t connection_type,
     }
     urg->is_sending = URG_FALSE;
 
-    // •Ï”‚Ì‰Šú‰»
+    // ï¿½Ïï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½
     urg->last_errno = URG_NO_ERROR;
     urg->range_data_byte = URG_COMMUNICATION_3_BYTE;
     urg->specified_scan_times = 0;
     urg->scanning_remain_times = 0;
     urg->is_laser_on = URG_FALSE;
 
-    // ƒpƒ‰ƒ[ƒ^î•ñ‚ğæ“¾
+    // ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
     ret = receive_parameter(urg);
     if (ret == URG_NO_ERROR) {
         urg->is_active = URG_TRUE;
@@ -763,7 +763,7 @@ int urg_start_time_stamp_mode(urg_t *urg)
         return set_errno_and_return(urg, URG_NOT_CONNECTED);
     }
 
-    // TM0 ‚ğ”­s‚·‚é
+    // TM0 ï¿½ğ”­sï¿½ï¿½ï¿½ï¿½
     n = scip_response(urg, "TM0\n", expected, urg->timeout, NULL, 0);
     if (n <= 0) {
         return set_errno_and_return(urg, URG_INVALID_RESPONSE);
@@ -790,9 +790,9 @@ long urg_time_stamp(urg_t *urg)
         return ret;
     }
 
-    // buffer ‚©‚çƒ^ƒCƒ€ƒXƒ^ƒ“ƒv‚ğæ“¾‚µAƒfƒR[ƒh‚µ‚Ä•Ô‚·
+    // buffer ï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½Cï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½Aï¿½fï¿½Rï¿½[ï¿½hï¿½ï¿½ï¿½Ä•Ô‚ï¿½
     if (strcmp(buffer, "00P")) {
-        // Å‰‚Ì‰“š‚ª "00P" ‚Å‚È‚¯‚ê‚Î–ß‚é
+        // ï¿½Åï¿½ï¿½Ì‰ï¿½ï¿½ï¿½ï¿½ï¿½ "00P" ï¿½Å‚È‚ï¿½ï¿½ï¿½ï¿½Î–ß‚ï¿½
         return set_errno_and_return(urg, URG_RECEIVE_ERROR);
     }
     p = buffer + 4;
@@ -815,7 +815,7 @@ int urg_stop_time_stamp_mode(urg_t *urg)
         return set_errno_and_return(urg, URG_NOT_CONNECTED);
     }
 
-    // TM2 ‚ğ”­s‚·‚é
+    // TM2 ï¿½ğ”­sï¿½ï¿½ï¿½ï¿½
     n = scip_response(urg, "TM2\n", expected, urg->timeout, NULL, 0);
     if (n <= 0) {
         return set_errno_and_return(urg, URG_INVALID_RESPONSE);
@@ -838,12 +838,12 @@ static int send_distance_command(urg_t *urg, int scan_times, int skip_scan,
     urg->scanning_remain_times = urg->specified_scan_times;
     urg->scanning_skip_scan = (skip_scan < 0) ? 0 : skip_scan;
     if (scan_times >= 100) {
-        // Œv‘ª‰ñ”‚ª 99 ‚ğ‰z‚¦‚éê‡‚ÍA–³ŒÀ‰ñ‚ÌƒXƒLƒƒƒ“‚ğs‚¤
+        // ï¿½vï¿½ï¿½ï¿½ñ”‚ï¿½ 99 ï¿½ï¿½ï¿½zï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ÍAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÌƒXï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½
         urg->specified_scan_times = 0;
     }
 
     if (urg->scanning_remain_times == 1) {
-        // ƒŒ[ƒU”­Œõ‚ğw¦
+        // ï¿½ï¿½ï¿½[ï¿½Uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½wï¿½ï¿½
         urg_laser_on(urg);
 
         write_size = snprintf(buffer, BUFFER_SIZE, "%c%c%04d%04d%02d\n",
@@ -885,12 +885,12 @@ int urg_start_measurement(urg_t *urg, urg_measurement_type_t type,
         return set_errno_and_return(urg, URG_INVALID_PARAMETER);
     }
 
-    // !!! Mx Œn, Nx Œn‚ÌŒv‘ª’†‚Ì‚Æ‚«‚ÍAQT ‚ğ”­s‚µ‚Ä‚©‚ç
-    // !!! Œv‘ªŠJnƒRƒ}ƒ“ƒh‚ğ‘—M‚·‚é‚æ‚¤‚É‚·‚é
-    // !!! ‚½‚¾‚µAMD Œv‘ª’†‚É MD ‚ğ”­s‚·‚é‚æ‚¤‚ÉA“¯‚¶ƒRƒ}ƒ“ƒh‚Ìê‡‚Í
-    // !!! Mx Œn, Nx Œn‚ÌŒv‘ª‚Íã‘‚«‚·‚é‚±‚Æ‚ª‚Å‚«‚é‚æ‚¤‚É‚·‚é
+    // !!! Mx ï¿½n, Nx ï¿½nï¿½ÌŒvï¿½ï¿½ï¿½ï¿½ï¿½Ì‚Æ‚ï¿½ï¿½ÍAQT ï¿½ğ”­sï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½
+    // !!! ï¿½vï¿½ï¿½ï¿½Jï¿½nï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½ğ‘—Mï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
+    // !!! ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AMD ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ MD ï¿½ğ”­sï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½ÉAï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½Ìê‡ï¿½ï¿½
+    // !!! Mx ï¿½n, Nx ï¿½nï¿½ÌŒvï¿½ï¿½ï¿½Íã‘ï¿½ï¿½ï¿½ï¿½ï¿½é‚±ï¿½Æ‚ï¿½ï¿½Å‚ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
 
-    // w’è‚³‚ê‚½ƒ^ƒCƒv‚ÌƒpƒPƒbƒg‚ğ¶¬‚µA‘—M‚·‚é
+    // ï¿½wï¿½è‚³ï¿½ê‚½ï¿½^ï¿½Cï¿½vï¿½Ìƒpï¿½Pï¿½bï¿½gï¿½ğ¶ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½ï¿½
     switch (type) {
     case URG_DISTANCE:
         range_byte_ch =
@@ -982,17 +982,17 @@ int urg_stop_measurement(urg_t *urg)
         return set_errno_and_return(urg, URG_NOT_CONNECTED);
     }
 
-    // QT ‚ğ”­s‚·‚é
+    // QT ï¿½ğ”­sï¿½ï¿½ï¿½ï¿½
     n = connection_write(&urg->connection, "QT\n", 3);
     if (n != 3) {
         return set_errno_and_return(urg, URG_SEND_ERROR);
     }
 
     for (i = 0; i < MAX_READ_TIMES; ++i) {
-        // QT ‚Ì‰“š‚ª•Ô‚³‚ê‚é‚Ü‚ÅA‹——£ƒf[ƒ^‚ğ“Ç‚İÌ‚Ä‚é
+        // QT ï¿½Ì‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ÅAï¿½ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½Ç‚İÌ‚Ä‚ï¿½
         ret = receive_data(urg, NULL, NULL, NULL);
         if (ret == URG_NO_ERROR) {
-            // ³í‰“š
+            // ï¿½ï¿½ï¿½í‰ï¿½ï¿½
             urg->is_laser_on = URG_FALSE;
             urg->is_sending = URG_FALSE;
             return set_errno_and_return(urg, URG_NO_ERROR);
@@ -1005,7 +1005,7 @@ int urg_stop_measurement(urg_t *urg)
 int urg_set_scanning_parameter(urg_t *urg, int first_step, int last_step,
                                int skip_step)
 {
-    // İ’è‚Ì”ÍˆÍŠO‚ğw’è‚µ‚½‚Æ‚«‚ÍAƒGƒ‰[‚ğ•Ô‚·
+    // ï¿½İ’ï¿½ï¿½Ì”ÍˆÍŠOï¿½ï¿½ï¿½wï¿½è‚µï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ÍAï¿½Gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ô‚ï¿½
     if (((skip_step < 0) || (skip_step >= 100)) ||
         (first_step > last_step) ||
         (first_step < -urg->front_data_index) ||
@@ -1049,7 +1049,7 @@ int urg_laser_on(urg_t *urg)
     }
 
     if (urg->is_laser_on != URG_FALSE) {
-        // Šù‚ÉƒŒ[ƒU‚ª”­Œõ‚µ‚Ä‚¢‚é‚Æ‚«‚ÍAƒRƒ}ƒ“ƒh‚ğ‘—M‚µ‚È‚¢‚æ‚¤‚É‚·‚é
+        // ï¿½ï¿½ï¿½Éƒï¿½ï¿½[ï¿½Uï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ÍAï¿½Rï¿½}ï¿½ï¿½ï¿½hï¿½ğ‘—Mï¿½ï¿½ï¿½È‚ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
         urg->last_errno = 0;
         return urg->last_errno;
     }
@@ -1079,7 +1079,7 @@ int urg_reboot(urg_t *urg)
         return set_errno_and_return(urg, URG_NOT_CONNECTED);
     }
 
-    // ‚Q‰ñ–Ú‚Ì RB ‘—MŒãAÚ‘±‚ğØ’f‚·‚é
+    // ï¿½Qï¿½ï¿½ï¿½Ú‚ï¿½ RB ï¿½ï¿½ï¿½Mï¿½ï¿½ï¿½Aï¿½Ú‘ï¿½ï¿½ï¿½ï¿½Ø’fï¿½ï¿½ï¿½ï¿½
     for (i = 0; i < 2; ++i) {
         ret = scip_response(urg, "RB\n", expected, urg->timeout, NULL, 0);
         if (ret < 0) {

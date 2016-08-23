@@ -20,6 +20,7 @@ using namespace std;
 
 #define SKIP_SCANS 0 // Number of scans to skip [0,9]
 #define PUBLISHING_CHANNEL "scan"
+#define TIMEOUT 1000 // in ms
 
 //#include <bot_core/bot_core.h>
 
@@ -31,18 +32,6 @@ long int getPCms(void){
         gettimeofday(&tp, NULL);
         long int ms = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 }
-
-// // Useful for printing the scan data.
-// static void print_data(Urg_driver urg, long data[], int data_n, long time_stamp)
-// {
-//     int front_index;
-//
-//     (void)data_n;
-//
-//     // \~japanese �O���̃f�[�^�݂̂��\��
-//     front_index = urg.step2index(0);
-//     printf("Distance from front of LIDAR is %ld [cm] @ timestamp %ld [msec].\n", data[front_index], time_stamp);
-// }
 
 // Where the magic happens
 int main(int argc, char *argv[])
@@ -59,6 +48,7 @@ int main(int argc, char *argv[])
 
         // Run the driver FOREVER
         while (TRUE) {
+                printf("##############################\n");
                 printf("Opening connection to Hokuyo\n");
 
                 // Params from the laser scanner
@@ -75,6 +65,8 @@ int main(int argc, char *argv[])
                 if (!urg.open(information.device_or_ip_name(), information.baudrate_or_port_number(), information.connection_type())) {
                         printf("urg.driver::open(): %s : %s", information.device_or_ip_name(), urg.what());
                 }
+
+                urg.set_timeout_msec(TIMEOUT);
 
                 // sync the clocks
                 urg.set_sensor_time_stamp(getPCms());
@@ -99,6 +91,7 @@ int main(int argc, char *argv[])
 
                 // Begin polling the laserscanner for intensity data.
                 bool catastrophicError = !urg.start_measurement(Urg_driver::Distance_intensity, Urg_driver::Infinity_times, SKIP_SCANS);
+
 
                 // error handling
                 if (catastrophicError) {
@@ -134,12 +127,15 @@ int main(int argc, char *argv[])
 
                         // error printing
                         if (catastrophicError) {
-                                printf("##############################\n");
-                                printf("Error from URG %s\n", urg.what());
+                              printf("Error from URG %s\n", urg.what());
                                 // printf("Error #%d\n",urg.last_errno);
                                 // Restart the measurement process.
-                                catastrophicError = !urg.start_measurement(Urg_driver::Distance_intensity, Urg_driver::Infinity_times, SKIP_SCANS);
-                                continue;
+                              //   if (urg.errorno() == -8){
+                              //   catastrophicError = !urg.start_measurement(Urg_driver::Distance_intensity, Urg_driver::Infinity_times, SKIP_SCANS);
+                              //
+                              // }
+                              // continue;
+                              break;
                         }
 
 
@@ -172,7 +168,7 @@ int main(int argc, char *argv[])
                 // Delay for 25ms
                 struct timespec timeOut,remains;
                 timeOut.tv_sec = 0;
-                timeOut.tv_nsec = 100*10+6;
+                timeOut.tv_nsec = 500*10+6;
                 nanosleep(&timeOut, &remains);//100ms
         }
 

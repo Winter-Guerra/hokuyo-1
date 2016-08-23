@@ -25,7 +25,7 @@ enum {
     URG_FALSE = 0,
     URG_TRUE = 1,
 
-    BUFFER_SIZE = 64 + 2 + 6,
+    BUFFER_SIZE = 4096,
 
     EXPECTED_END = -1,
 
@@ -36,7 +36,7 @@ enum {
     VV_RESPONSE_LINES = 7,
     II_RESPONSE_LINES = 9,
 
-    MAX_TIMEOUT = 140,
+    MAX_TIMEOUT = 150,
 };
 
 
